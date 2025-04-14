@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Blog</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Blog</h1>
+        
+        <form id="postForm" action="/create_post" method="POST">
+            <input type="text" name="title" placeholder="Post Title" required>
+            <input type="text" name="author" placeholder="Your Name (optional)">
+            <textarea name="content" placeholder="Write your post..." required></textarea>
+            <button type="submit">Publish Post</button>
+        </form>
+
+        <div id="posts">
+            {% for post in posts %}
+            <div class="post">
+                <h2>{{ post.title }}</h2>
+                <p class="meta">By {{ post.author }} on {{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                <p>{{ post.content }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        // Handle form submission
+        document.getElementById('postForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            await fetch('/create_post', {
+                method: 'POST',
+                body: formData
+            });
+            
+            e.target.reset();
+        });
+
+        // Handle new posts from WebSocket
+        socket.on('new_post', (post) => {
+            const postsDiv = document.getElementById('posts');
+            const newPost = document.createElement('div');
+            newPost.className = 'post';
+            newPost.innerHTML = `
+                <h2>${post.title}</h2>
+                <p class="meta">By ${post.author} on ${post.created_at}</p>
+                <p>${post.content}</p>
+            `;
+            postsDiv.prepend(newPost);
+        });
+    </script>
+</body>
+</html>
